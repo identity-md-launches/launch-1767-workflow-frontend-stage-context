@@ -1,0 +1,72 @@
+{
+  "resources": [
+    {
+      "path": "assets/index-1DWBC8os.js",
+      "type": "script"
+    },
+    {
+      "path": "assets/index-B2Mhr0uG.css",
+      "type": "link"
+    },
+    {
+      "path": "assets/space-grotesk-latin-wght-normal-BhU9QXUp.woff2",
+      "type": "css"
+    },
+    {
+      "path": "imd-deployment.json",
+      "type": "fetch"
+    },
+    {
+      "path": "favicon.svg",
+      "type": "other"
+    },
+    {
+      "path": "abi/ERC20.json",
+      "type": "fetch"
+    },
+    {
+      "path": "abi/TransferValidator.json",
+      "type": "fetch"
+    },
+    {
+      "path": "abi/VeteransClaimPool.json",
+      "type": "fetch"
+    },
+    {
+      "path": "abi/VeteransNFT.json",
+      "type": "fetch"
+    },
+    {
+      "path": "abi/VeteransRenderer.json",
+      "type": "fetch"
+    },
+    {
+      "path": "abi/VeteransStaking.json",
+      "type": "fetch"
+    },
+    {
+      "path": "abi/WethUnwrapper.json",
+      "type": "fetch"
+    },
+    {
+      "path": "assets/dist-CC4nNWp7.js",
+      "type": "script"
+    },
+    {
+      "path": "assets/ibm-plex-mono-latin-400-normal-DMJ8VG8y.woff2",
+      "type": "css"
+    },
+    {
+      "path": "",
+      "type": "fetch"
+    },
+    {
+      "path": "wallets/coinbase.svg",
+      "type": "img"
+    }
+  ],
+  "viewport": {
+    "width": 1440,
+    "scrollWidth": 1440
+  }
+}

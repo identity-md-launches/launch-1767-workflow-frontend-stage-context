@@ -1,0 +1,44 @@
+{
+  "chainId": 4663,
+  "repoUrl": "https://github.com/identity-md-launches/launch-1756-workflow-contract-stage-context",
+  "version": 1,
+  "launchId": "18d391e8-b53a-4f70-b9f3-3419fd6b8a48",
+  "manifest": {
+    "kind": "evm_contracts",
+    "notes": "Describes the accepted VETERANS source in constructor dependency order. VeteransRenderer has no constructor arguments and renders on-chain metadata. VeteransNFT(owner_, renderer_) is the VETERANS ERC721C collection: owner_ is $owner (the collection's explicit owner; never the factory), renderer_ is the renderer deployed before it. VeteransNFT's constructor creates VeteransStaking(nft) and VeteransClaimPool(nft, staking) itself (and the pool creates its WethUnwrapper), binds them as immutables, and sets the ERC-2981 royalty receiver to the pool. Those three contracts are therefore not manifest entries: deploying them separately would create unused duplicates the collection never references. Their addresses are read from VeteransNFT.staking() and VeteransNFT.claimPool() and the SiblingsDeployed event. No constructor calls another contract (the ERC721C validator registration is guarded by an extcodesize check), so the set deploys on an empty chain. Staking and the claim pool have no owner. The treasury beneficiary is fixed in source at 0xEab8865F6Af3a866FEf97a9A776c58aBcB711ab5 and receives no administrative role. Open points for review, not waived by this manifest: (1) the IMD token address is not in the brief; VeteransNFT.mint reverts with NotConfigured until the owner calls configure(imd, staking, claimPool) once after launch (the staking and pool arguments must equal the constructor-deployed siblings, so they confirm wiring and cannot redirect it). This manifest supplies no initialization call and no IMD address. (2) The collection registers Limit Break's default transfer validator but its constructor does not set the royalty-enforcing security policy; the owner must set it on the validator after launch and can replace or disable the validator, so immutable royalty enforcement is not established by deployment. (3) The claim pool holds the 20% mint share as IMD and distributes it alongside ETH royalties, rather than converting it to ETH; ETH royalties are split 600/690 to stakers and 90/690 to treasury. (4) Epochs 1-9 hold 333 mints and epoch 10 holds 336, since 10 x 333 = 3,330 and the brief fixes both 3,333 and ten epochs. (5) Age multipliers refresh on stake, unstake, claim or an explicit refresh call, not automatically at tier boundaries. Policy and signed artifact linkage belong to the publishing, attestation, admission and deployment services; these notes are explanatory and do not authorize additional deployment actions.",
+    "contracts": [
+      {
+        "contract": "VeteransRenderer",
+        "constructorArgs": []
+      },
+      {
+        "contract": "VeteransNFT",
+        "constructorArgs": [
+          "$owner",
+          "$contract:VeteransRenderer"
+        ]
+      }
+    ]
+  },
+  "contracts": [
+    {
+      "name": "VeteransRenderer",
+      "txHash": "0x0b6c9c505ce5ff61b6d6c152b792b8135811c3d215755a2604cd86a3d49c1383",
+      "abiHash": "c5d6bbfa9dcc1b80975836519faad81910fb60355590b3fc5be20afd7bee29b2",
+      "address": "0x52aaebf6aabe67b182eca14e3df52601b92765b7",
+      "blockNumber": 88572812,
+      "creationCodeHash": "d9fa8f869ef0613588e2e1f6ca91dfd6762052330a7103b2ae70b7b8e47c7f87"
+    },
+    {
+      "name": "VeteransNFT",
+      "txHash": "0x0b6c9c505ce5ff61b6d6c152b792b8135811c3d215755a2604cd86a3d49c1383",
+      "abiHash": "bd4ea42d960ad5325217e55b740355d492ca2e55d62efd0d1d4d72c0e6742643",
+      "address": "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+      "blockNumber": 88572812,
+      "creationCodeHash": "61cf726feaa022d946dc7706dcf59991c46bab486eec286437991017351eab14"
+    }
+  ],
+  "sourceCommit": "d3de6035fe432600d7f669ba8104e1ba4bbb37be",
+  "abiInstructions": "Build ABIs from this exact source commit; compare canonicalKeccak(abi) with abiHash. Verify deployed code on the stated chain before enabling transactions.",
+  "attestationHash": "edfa6a8fa59bf470396899e5bfbd35dbf7e4775495aa445b7e15ccdca8caad87"
+}

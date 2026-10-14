@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "kind": "Git bundle of all frontend changes, requiring the pinned deployed commit",
+  "prerequisite": "d3de6035fe432600d7f669ba8104e1ba4bbb37be",
+  "lessThanBytes": 1048576,
+  "limitBytes": 8388608,
+  "scope": "Disposable verification repository; task checkout Git metadata is read-only",
+  "fullHistoryBundle": "Unavailable: the supplied partial repository lacks historical object 98bf7a853cbdbc3792caf035ec31bbdeb6a6113e"
+}

@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "launchId": "18d391e8-b53a-4f70-b9f3-3419fd6b8a48",
+  "chainId": 4663,
+  "sourceCommit": "d3de6035fe432600d7f669ba8104e1ba4bbb37be",
+  "attestationHash": "edfa6a8fa59bf470396899e5bfbd35dbf7e4775495aa445b7e15ccdca8caad87",
+  "contracts": [
+    {
+      "name": "VeteransRenderer",
+      "address": "0x52aaebf6aabe67b182eca14e3df52601b92765b7",
+      "abiHash": "c5d6bbfa9dcc1b80975836519faad81910fb60355590b3fc5be20afd7bee29b2",
+      "abiPath": "abi/VeteransRenderer.json"
+    },
+    {
+      "name": "VeteransNFT",
+      "address": "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+      "abiHash": "bd4ea42d960ad5325217e55b740355d492ca2e55d62efd0d1d4d72c0e6742643",
+      "abiPath": "abi/VeteransNFT.json"
+    }
+  ],
+  "assets": [
+    {
+      "path": "IBM-Plex-Mono-LICENSE.txt",
+      "sha256": "23b0a9d0c6d3f140a0b77e483c5cfa6bba574325ef5cb189ed9f2fec4884533f"
+    },
+    {
+      "path": "Space-Grotesk-LICENSE.txt",
+      "sha256": "18a4de52385f6b988782639d5d0cc1326e5a8c2de9a7f01d7b20d9aedcc60943"
+    },
+    {
+      "path": "Wallet-Icons-LICENSE.txt",
+      "sha256": "5095037afa1ba03be36e04305c01ec9ee600e14377738a026482b1a888c4e365"
+    },
+    {
+      "path": "abi/ERC20.json",
+      "sha256": "9550ef46cd9dd26e8061df60a35f0fc25a4eb0732e719610e47f81816d8269fc"
+    },
+    {
+      "path": "abi/TransferValidator.json",
+      "sha256": "2380640a5c580ce230c95ba259025fc834b16e9a186c756e9233d6c378740e7b"
+    },
+    {
+      "path": "abi/VeteransClaimPool.json",
+      "sha256": "6732c55ed32be9171ad73e374677988813543e626697b5b6641c026e8627dff4"
+    },
+    {
+      "path": "abi/VeteransNFT.json",
+      "sha256": "8f66b56c3c850a0dfee1c1b3235d51747166af1c15b3935e6f3429f71b968eae"
+    },
+    {
+      "path": "abi/VeteransRenderer.json",
+      "sha256": "b9f60ce82d9002634455651346af107682ef0ad294c8c373a079db52ef7b31fe"
+    },
+    {
+      "path": "abi/VeteransStaking.json",
+      "sha256": "cb6600b8dfe0342382d5b7bcb8097ae7efd8e294e98e6de171ce4118fff34c89"
+    },
+    {
+      "path": "abi/WethUnwrapper.json",
+      "sha256": "00217202c7c8f990ace0a59e74a22cbd777ecc2acd4dde55a3afb25a781c8a36"
+    },
+    {
+      "path": "assets/ccip-DqzNm-FJ.js",
+      "sha256": "f384f6f6aadee96f7e7bd89401c740086043a13b2a4b28bfbdc182b7d55811f1"
+    },
+    {
+      "path": "assets/dist-CC4nNWp7.js",
+      "sha256": "c4f929adffe55ed173c1b02a2f78d63bffcbe9fc455a6d6963612265645d73ae"
+    },
+    {
+      "path": "assets/ibm-plex-mono-latin-400-normal-DMJ8VG8y.woff2",
+      "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
+    },
+    {
+      "path": "assets/index-1DWBC8os.js",
+      "sha256": "e3bcf6423a1d6c63d4fbd313ccfe56faf1797fed49f318d64ec83df7be88c9e2"
+    },
+    {
+      "path": "assets/index-B2Mhr0uG.css",
+      "sha256": "65a2b86a681f59dc2e13ab9b591a610e8217b677120648497d00c1798f017484"
+    },
+    {
+      "path": "assets/miner.worker-BUVCHpnN.js",
+      "sha256": "6ce0e79fff837763b4dd43c1f95d9e08b0962b9c0bf9c0e71a0d1175d67cc198"
+    },
+    {
+      "path": "assets/space-grotesk-latin-wght-normal-BhU9QXUp.woff2",
+      "sha256": "0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d"
+    },
+    {
+      "path": "favicon.svg",
+      "sha256": "07f669f737633c5eb00577531450dca8c3f73770b768b418b63ccc60a27df533"
+    },
+    {
+      "path": "index.html",
+      "sha256": "4fdcfced1682d567da96cb8fb1705393d863dfe11a8409d0500e60e01f559683"
+    },
+    {
+      "path": "share.png",
+      "sha256": "6a1d7161c24c36542535ed0dba47790495fd724e3cb864f9322cfaed17e35c21"
+    },
+    {
+      "path": "wallets/coinbase.svg",
+      "sha256": "f32b7c707756cf2ac649b37237145593f2ac685e2fb581ba7b5e2aa4cdea1c67"
+    },
+    {
+      "path": "wallets/metamask.svg",
+      "sha256": "892c7dfab8c4ca5682878dda3f42f55a75195d7d365e4adb0832845f3a0a2135"
+    },
+    {
+      "path": "wallets/phantom.svg",
+      "sha256": "f841f8112e131259a2e5123177950099c79487e61e77971f4e193e6c374419eb"
+    },
+    {
+      "path": "wallets/rabby.svg",
+      "sha256": "dcae4de88ebfa10cffa1fe28df13d7c8c0b40736ef2b704f1f2fc348e777e443"
+    }
+  ],
+  "network": {
+    "chainId": 4663,
+    "name": "Robinhood Chain",
+    "testnet": false,
+    "rpcUrls": [
+      "https://robinhood-rpc.publicnode.com",
+      "https://rpc.mainnet.chain.robinhood.com"
+    ],
+    "explorer": "https://robin.etherscan.io",
+    "nativeCurrency": {
+      "name": "Ether",
+      "symbol": "ETH",
+      "decimals": 18
+    },
+    "faucets": [],
+    "uniswapV4": {
+      "poolManager": "0x8366a39cc670b4001a1121b8f6a443a643e40951",
+      "universalRouter": "0x8876789976decbfcbbbe364623c63652db8c0904",
+      "quoter": "0x8dc178efb8111bb0973dd9d722ebeff267c98f94",
+      "stateView": "0xf3334192d15450cdd385c8b70e03f9a6bd9e673b",
+      "positionManager": "0x58daec3116aae6d93017baaea7749052e8a04fa7",
+      "permit2": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+      "extendedSwapParams": true
+    },
+    "pairToken": {
+      "address": "0x5f7bb59365ce557c26dbcaa4ee9d39a4b95b7127",
+      "symbol": "IMD",
+      "name": "Identity.md",
+      "decimals": 18
+    }
+  },
+  "walletAddChain": {
+    "chainId": "0x1237",
+    "chainName": "Robinhood Chain",
+    "rpcUrls": [
+      "https://robinhood-rpc.publicnode.com",
+      "https://rpc.mainnet.chain.robinhood.com"
+    ],
+    "nativeCurrency": {
+      "name": "Ether",
+      "symbol": "ETH",
+      "decimals": 18
+    },
+    "blockExplorerUrls": [
+      "https://robin.etherscan.io"
+    ]
+  }
+}

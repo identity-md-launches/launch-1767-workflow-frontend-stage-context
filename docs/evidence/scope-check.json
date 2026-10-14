@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "verification": "Disposable staging repository; original checkout has read-only Git metadata",
+  "allowedRoots": [
+    "web/",
+    "dist/",
+    "docs/"
+  ],
+  "allowedDotfiles": [
+    "web/.gitignore"
+  ],
+  "disallowedPaths": [],
+  "gitlinks": [],
+  "originalTrackedFilesChanged": 0
+}

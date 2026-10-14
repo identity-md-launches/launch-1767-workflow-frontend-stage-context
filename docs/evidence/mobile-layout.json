@@ -1,0 +1,16 @@
+{
+  "width": 390,
+  "scrollWidth": 390,
+  "miningButton": {
+    "x": 33,
+    "y": 528.640625,
+    "width": 324,
+    "height": 48,
+    "top": 528.640625,
+    "right": 357,
+    "bottom": 576.640625,
+    "left": 33
+  },
+  "fontsLoaded": "loaded",
+  "title": "VETERANS · Mine your legacy"
+}

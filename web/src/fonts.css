@@ -1,0 +1,15 @@
+@font-face {
+  font-family: 'Space Grotesk Variable';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2')
+    format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+}
