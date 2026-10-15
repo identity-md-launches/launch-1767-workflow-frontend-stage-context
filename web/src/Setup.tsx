@@ -4,15 +4,7 @@ import { read } from './chain';
 import { AddressLink, Notice } from './components';
 import type { PageProps } from './Portfolio';
 import { errorText, isZero, validAddress } from './utils';
-
-type Policy = {
-  disableAuthorizationMode: boolean;
-  authorizersCannotSetWildcardOperators: boolean;
-  transferSecurityLevel: number;
-  listId: bigint;
-  enableAccountFreezingMode: boolean;
-  tokenType: number;
-};
+import { readTransferPolicy, transferPolicyArgs } from './validator';
 export function Setup({ r, state, address, ready, tx }: PageProps) {
   const owner = !!address && address.toLowerCase() === state?.owner.toLowerCase();
   const [imd, setImd] = useState(''),
@@ -21,16 +13,13 @@ export function Setup({ r, state, address, ready, tx }: PageProps) {
     [validator, setValidator] = useState(''),
     [newOwner, setNewOwner] = useState(''),
     [list, setList] = useState(''),
-    [level, setLevel] = useState('3'),
+    [level, setLevel] = useState('direct'),
     [error, setError] = useState(''),
     [checking, setChecking] = useState(false);
   const policy = useQuery({
     queryKey: ['policy', state?.validator, state?.blockNumber.toString()],
     enabled: !!state && !isZero(state.validator),
-    queryFn: () =>
-      read<Policy>(r, 'TransferValidator', state!.validator, 'getCollectionSecurityPolicy', [
-        r.nft,
-      ]),
+    queryFn: () => readTransferPolicy(r, state!.validator),
     retry: 0,
     staleTime: 30000,
   });
@@ -111,7 +100,7 @@ export function Setup({ r, state, address, ready, tx }: PageProps) {
               <span>Transfer policy</span>
               <strong>
                 {policy.data
-                  ? `Level ${policy.data.transferSecurityLevel} · list ${policy.data.listId}`
+                  ? `Ruleset ${policy.data.rulesetId} · list ${policy.data.listId}`
                   : 'Not verified'}
               </strong>
             </div>
@@ -127,7 +116,9 @@ export function Setup({ r, state, address, ready, tx }: PageProps) {
             <AddressLink r={r} address={state.staking} label="Staking · resolved from NFT" />
             <AddressLink r={r} address={state.pool} label="Claim pool · resolved from NFT" />
             <AddressLink r={r} address={state.owner} label="Collection owner" />
-            {!isZero(state.imd) && <AddressLink r={r} address={state.imd} label="Configured IMD" />}
+            {!isZero(state.imd) && (
+              <AddressLink r={r} address={state.imd} label="Configured IMD" />
+            )}
             {!isZero(state.weth) && (
               <AddressLink r={r} address={state.weth} label="Configured WETH" />
             )}
@@ -234,38 +225,39 @@ export function Setup({ r, state, address, ready, tx }: PageProps) {
                   <h3>3. Set transfer policy</h3>
                   <p>
                     Configure the current Limit Break validator. Operator lists must contain
-                    royalty-honouring marketplaces. Applying a list and setting the level are
+                    royalty-honouring marketplaces. Applying a list and choosing the rules are
                     separate transactions.
                   </p>
                   {policy.error && (
                     <Notice tone="error">
-                      The validator’s policy interface could not be read. Policy writes are
-                      disabled.
+                      {errorText(policy.error)} Policy writes are disabled.
                     </Notice>
                   )}
                   <label>
-                    Security level
+                    Transfer rules
                     <select value={level} onChange={(e) => setLevel(e.target.value)}>
-                      <option value="3">3 · Allowlisted operators, direct transfers allowed</option>
-                      <option value="4">4 · Allowlisted operators only</option>
+                      <option value="direct">
+                        Allowlisted operators, direct transfers allowed
+                      </option>
+                      <option value="operators">Allowlisted operators only</option>
                     </select>
                   </label>
                   <button
                     className="button"
-                    disabled={disabled || !policy.data}
+                    disabled={disabled || !policy.data || policy.isError}
                     onClick={() =>
                       tx.propose({
                         key: 'policy',
                         label: 'Set transfer policy',
-                        description: `Set level ${level} on the current validator. Disable authorization overrides and wildcard operators, and leave account freezing off. This can restrict NFT transfers. Review the applied marketplace list separately.`,
+                        description: `Use the allowlist ruleset with ${level === 'direct' ? 'direct transfers allowed, including smart wallets' : 'direct transfers restricted to the allowlist'}. Disable authorization overrides and wildcard operators, and leave account freezing off. This can restrict NFT transfers. Review the applied marketplace list separately.`,
                         address: state.validator,
                         abi: 'TransferValidator',
-                        functionName: 'setTransferSecurityLevelOfCollection',
-                        args: [r.nft, Number(level), true, true, false],
+                        functionName: 'setRulesetOfCollection',
+                        args: transferPolicyArgs(r.nft, level === 'direct'),
                       })
                     }
                   >
-                    {tx.label('policy', 'Review security level')}
+                    {tx.label('policy', 'Review transfer rules')}
                   </button>
                   {tx.status('policy')}
                   <label>
@@ -278,13 +270,13 @@ export function Setup({ r, state, address, ready, tx }: PageProps) {
                   </label>
                   <button
                     className="button"
-                    disabled={disabled || !policy.data}
+                    disabled={disabled || !policy.data || policy.isError}
                     onClick={() => {
                       try {
                         setError('');
-                        if (!/^\d+$/.test(list) || BigInt(list) >= 1n << 120n)
+                        if (!/^\d+$/.test(list) || BigInt(list) >= 1n << 48n)
                           throw new Error(
-                            'Enter the existing list ID as a nonnegative integer within uint120.',
+                            'Enter an existing list ID from 0 to 281474976710655.',
                           );
                         tx.propose({
                           key: 'apply-list',
@@ -293,7 +285,7 @@ export function Setup({ r, state, address, ready, tx }: PageProps) {
                           address: state.validator,
                           abi: 'TransferValidator',
                           functionName: 'applyListToCollection',
-                          args: [r.nft, BigInt(list)],
+                          args: [r.nft, Number(list)],
                         });
                       } catch (e) {
                         setError(errorText(e));

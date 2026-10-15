@@ -1,4 +1,6 @@
-# Frontend validation
+# Frontend validation (historical: 2026-10-14)
+
+For the current wallet/RPC repair, use [WALLET-RPC-VALIDATION.md](WALLET-RPC-VALIDATION.md). The results, scope, deployment state and tool limitations below describe the earlier frontend task.
 
 Validation was performed on 2026-10-14 against the production static export. This is worker-generated evidence, not an independent certification or evidence of future publication. No real transaction was signed or broadcast.
 

@@ -1,0 +1,76 @@
+# Wallet and RPC repair validation
+
+Checked on 2026-10-15 against the rebuilt production export. These are worker-run checks, not an independent audit. No wallet signature, transaction broadcast, deployment or policy change occurred. The existing contracts, economics, deployment addresses, network handoff, build configuration and dependency lockfile are unchanged.
+
+## Repairs and evidence
+
+Locations refer to the final source.
+
+| Finding | Location | Implemented fix and check |
+| --- | --- | --- |
+| Persisted connector metadata can be exposed while wagmi reconnects; it has no callable provider getter | `web/src/wallet-provider.ts:7`, `web/src/Wallet.tsx:94`, `web/src/App.tsx:63` | Every application `getProvider()` call goes through the runtime guard; the returned provider must support `request`. Only fully connected state enables reads through that wallet or signing. Malformed, serialized and factory inputs are covered by Node tests; delayed restoration is covered in Chromium. |
+| Multiple authorized extensions and unused SDK initialization can compete with the chosen wallet | `web/src/Wallet.tsx:63`, `web/src/main.tsx:42` | Disable automatic all-connector restoration and restore only the previous real, discovered connector. Keep EIP-6963 provider identity, suppress the generic row when named wallets exist, and lock concurrent connection attempts. Two conflicting wallets were exercised across reload; the competing `window.ethereum` provider received no requests. |
+| Repeated provider acquisition / discovery can amplify initialization and listener issues | `web/src/wallet-provider.ts:25`, `web/src/Wallet.tsx:105` | Share in-flight provider lookup; clear the fallback on context changes and ignore stale results. No additional provider event listeners or warning suppression were introduced. Twenty-five announcements and twelve reconnect cycles left at most one handler per provider event. No captured MaxListenersExceededWarning, ObjectMultiplex or orphaned-stream messages. Real extension internals remain outside this test. |
+| Public RPC batching / temporary failures prevented preflight | `web/src/rpc.ts:4`, `web/src/config.ts:109` | Unbatched requests, four-second HTTP timeout, both supplied endpoints in order, selected wallet last, one complete retry on transient failure. Wallet fallback is bounded by eight seconds and checks its current chain and identity. Tests cover HTTP failure, rate limits, rejected batches, recovery, disconnected/wrong-chain/replaced providers, and immediate stop on contract reverts. |
+| Contract failures were mislabeled as network errors because full viem errors include HTTPS documentation URLs | `web/src/utils.ts:49` | Decode contract reverts first; inspect transport error types and short messages for network failures. Invalid list errors now identify the list problem. Tests cover contract reverts and unrelated errors containing documentation URLs. |
+| The transfer validator ABI described an older implementation | `web/config/transfer-validator.json:1`, `web/src/validator.ts:14`, `web/src/Setup.tsx:225` | Use the deployed modular read tuple, `setRulesetOfCollection`, and the uint48 list method. Verify supported write selectors before enabling controls. Both policy choices, valid/invalid list handling, list bounds and an incompatible replacement are tested. All three real preflights succeed on both public endpoints. |
+| A wallet can change between review and signing | `web/src/transactions.tsx:48`, `web/src/transactions.tsx:175` | Bind review to account, chain, connector and connection status; recheck those after simulation and before requesting a signature. Existing transaction locks, second simulation and receipt handling remain intact. |
+
+## Transfer validator provenance
+
+The application still resolves the validator through the deployed NFT's `getTransferValidator()`; no new contract address is configured. The old methods `setTransferSecurityLevelOfCollection(address,uint8,bool,bool,bool)` and `applyListToCollection(address,uint120)` were absent from the deployed runtime, and read-only calls to them reverted on both RPCs. The old and new policy readers share a selector and six return words, which allowed the wrong read tuple to decode misleadingly.
+
+The corrected minimal interface matches Limit Break's [modular validator source at 59adb8b36ab0256c7430b017b1c9f8b4841d6e1e](https://github.com/limitbreakinc/creator-token-transfer-validator/tree/59adb8b36ab0256c7430b017b1c9f8b4841d6e1e), its `ModuleCollectionAndListManagement.sol`, `DataTypes.sol`, `Constants.sol`, `RulesetWhitelist.sol` and custom errors. The ABI was also cross-checked against [Sourcify's verified metadata for the same validator address on Ethereum](https://repo.sourcify.dev/contracts/full_match/1/0x721C008fdff27BF06E7E123956E2Fe03B63342e3/metadata.json). That cross-chain record is supporting interface evidence, not an attestation of the Robinhood deployment. Live runtime selectors, reads and simulations establish compatibility for the calls exercised here.
+
+The Robinhood validator runtime Keccak hash observed on both RPCs was `0xcf4eb611d0a4264a3cca483100d883e21545581c69b80e9d0cc29606d4b93dcc`. Its policy read returned ruleset 0, list 0, no custom ruleset, global/ruleset options 0, and ERC721 token type 721. The UI displays that current state without changing it.
+
+The allowlist setting uses ruleset 4, global flags `1 | 2` (disable authorization overrides and wildcard operators), and either ruleset flags `2 | 4` (allow direct transfers, including EIP-7702 delegated accounts and smart wallets) or flag `1` (restrict direct transfers to the allowlist too). Account freezing and receiver restrictions remain off, preserving the existing choices' intent. `zeroAddress` is the protocol-required “no custom ruleset” argument for a managed ruleset, not a substitute owner, recipient, address or missing deployment value. List IDs are bounded to uint48 and use an existing owner-entered list; no marketplace list was invented.
+
+[policy-check.json](evidence/policy-check.json) records `eth_call` and `eth_estimateGas` for both settings and reapplying the current list, using the actual on-chain owner as the simulation sender. Both RPCs passed all three calls and estimates: 43,044 gas for each policy setting and 37,530 for the list. This does not certify marketplace compliance or a future signed transaction.
+
+## Commands and results
+
+Dependencies were installed with the unchanged lockfile in disposable `test/scratch/build/web/`, using `npm ci --prefix test/scratch/build/web`. The source/config/scripts/tests were copied there and the pinned ABI source remained accessible from the checkout. The resulting export was copied back to root `dist/`. No dependency directory or package cache is delivered. Reproduction commands for an ordinary checkout are in the root and frontend READMEs.
+
+| Actual command / check | Result |
+| --- | --- |
+| `npm --prefix test/scratch/build/web run build` | Passed: `tsc --noEmit`, Vite production bundle, pinned ABI export and inventory. |
+| `npm --prefix test/scratch/build/web test` | 17 tests passed, zero failures/skips. |
+| `PLAYWRIGHT_BROWSERS_PATH=/tmp/veterans-playwright npm --prefix test/scratch/build/web run test:browser` | 34 interaction groups passed; no uncaught script errors or captured wallet stream/listener warnings. |
+| `npm --prefix test/scratch/build/web run verify` | Passed: 24 inventoried assets, 921,011 asset bytes, both attested contract ABI hashes match. |
+| `node test/scratch/build/web/scripts/check-chain.mjs` | Both supplied public RPCs passed chain ID, code, sibling linkage and live configuration reads. |
+| `node --import tsx scripts/check-policy.mjs` in the scratch frontend | All six policy simulations and gas estimates passed across both RPCs. |
+| `IMD_PLAYWRIGHT=./test/scratch/build/web/node_modules/playwright/index.mjs PLAYWRIGHT_BROWSERS_PATH=/tmp/veterans-playwright node .imd/reads/skills/design-critic/scripts/taste.mjs --out test/scratch/taste` | Final root export: 16/16 passed; no script errors, local resource failures, overflow, overlaps or clipping. |
+| Chromium live-RPC inspection of the production export under `/preview/` | All six routes fit 320/390/1440px; Mine also fits 900px. Product, wallet and primary action visible at 390×844. Keyboard dialog opening, Tab, Escape and focus return passed. |
+| axe scan of all six routes | Zero reported violations in tested states. |
+
+The 653.16 KB main JavaScript chunk (196.48 KB gzip) triggers Vite's existing 650 KB advisory. The build succeeds. The existing bundled wallet SDK and theme assets are retained; no dependency or build configuration was changed to suppress this advisory.
+
+The browser suite exercises real bundled UI and the PoW Web Worker against synthetic RPC/EIP-6963 providers; synthetic wallets never broadcast. It retains mining/approval/mint, pause/account-change cancellation, auto-mine without automatic signing, gallery search/filter, staking/unstaking, claims, owner setup, irreversible confirmation, uncertain receipt recovery, mobile wallet links, network switching, ABI tamper rejection and narrow-screen checks. The added groups cover the failures described above. Evidence: [interactions](evidence/wallet-rpc-interactions.json), [accessibility](evidence/wallet-rpc-accessibility.json), [live chain](evidence/wallet-rpc-chain-check.json), [export](evidence/wallet-rpc-export-check.json).
+
+## Better Interface review
+
+The pinned workflow, core principles across all six domains, relevant wallet/form/state guidance and design-documentation method were read and applied while repairing the existing UI. The requested theme/layout was retained. Source review was followed by rendered Chromium inspection, automated measurements, and the final probe. The implemented design is documented at root [DESIGN.md](../DESIGN.md).
+
+| Domain | Coverage, findings and fixes | Limits |
+| --- | --- | --- |
+| Accessibility | Visible labels and native inputs retained in `Setup.tsx:236`; error/status semantics retained in `components.tsx` and `Wallet.tsx`. Keyboard modal dismissal/focus return and six-route axe scans passed. Disabled states now correctly reflect unavailable connectors or incompatible policies. | No screen reader or physical touch-device audit. Seven home controls remain below the preferred 44px size but all 17 pass the 24px-or-spacing baseline. |
+| Layout | Existing shared grids, spacing, wrapped addresses and responsive dialog preserved in `styles.css`. All six routes tested at 320/390/1440; no overflow. Mine at 390 shows the main action at y=528.64, height=48, within the 844px viewport. | No physical safe-area, RTL or localization testing. |
+| Writing | Fixed misleading “network” diagnosis in `utils.ts:49`; replaced obsolete security-level labels with actual transfer rules in `Setup.tsx:236`; actionable missing-list and incompatible-interface guidance. Existing short heading and nearby mining instructions preserved. | English only; no assertion that an operator list guarantees marketplace royalty compliance. |
+| Typography | Existing local Space Grotesk and IBM Plex Mono retained. Probe found two families, three weights and six sizes including one-off display sizes; form inputs remain 16px. No tracked small-cap labels above headings. | No non-Latin font/locale testing. |
+| Colors | Existing semantic palette preserved; states carry text as well as color. Measured text passed 4.5:1, or 3:1 for large text. Error/success/disabled states and keyboard focus inspected. | Dark-only theme; probe contrast covers rendered text, not every possible dynamic state or external on-chain artwork. |
+| UI | A single connect control, named wallet selection and native dialogs remain. Fixed restoration, provider lifecycle, fallback, simulation and policy input states at the locations above. Repeated reconnects, error/retry and confirmation flows passed. | Native extensions, phone apps and Coinbase passkeys require device testing; fixtures cannot model all extension internals. |
+
+No failed first-screen or repeated-page check remains. The final probe measured 24 prose words on the 390 first screen and 42 at desktop, no looping animations or `transition: all`, and title/favicon/description/og:title/og:image present. It found no cards nested in cards or overlapping text. The source's reduced-motion rules remain intact.
+
+Reviewed images: [390px first screen](evidence/wallet-rpc-mine-390.jpg), [1440px full page](evidence/wallet-rpc-mine-1440.jpg), [keyboard-focused wallet](evidence/wallet-rpc-wallet-focus.jpg), [390px setup](evidence/wallet-rpc-setup-mobile.jpg). Measurements: [live review](evidence/wallet-rpc-live-review.json) and [final pinned probe](evidence/wallet-rpc-taste.json). The screenshot shows live IMD/WETH configured and zero minted supply; the worker did not configure them. Historical evidence from the previous task remains separately dated in `docs/VALIDATION.md`.
+
+## Limits and delivery
+
+The browser MCP could not launch because its Chrome distribution was unavailable. Scripted Playwright Chromium did run and supplied the observations/screenshots above. WebKit was attempted but could not launch because required host libraries were absent; Safari/WebKit and Firefox were not tested. Actual installed extensions, hardware wallets, mobile app handoff, passkey creation and live funded transactions were not tested. No claim is made that arbitrary extension-generated warnings are eliminated. The repair removes application-side triggers tested here and does not suppress warnings or raise listener limits.
+
+The two public RPC checks are point-in-time results, not an availability guarantee. A future replacement validator lacking these runtime selectors intentionally disables these specific policy controls. Royalty enforcement and marketplace list membership remain owner responsibilities. The live collection has no minted tokens, so full-supply gallery performance was not tested in this repair.
+
+`dist/index.html`, its local assets and relative URLs, frontend source, unchanged manifest/lockfile, root design documentation and reproduction instructions are ready for the submission publisher. The site name remains `https://veterans-mine-your-legacy.sites.imd.fun`. No publishing command was run and the live URL has not been verified as serving this revision; the control plane applies the submitted export. The task prohibits touching `.git/`, so no staging/commit was attempted in the task checkout. The submission controller must collect the finished files. Size/path checks use disposable scaffolding only; no generated dependency archives, caches, browser binaries or submodules are submitted.
+
+The [path audit](evidence/wallet-rpc-scope-check.json) passed with no protected-path edits, generated dependency directories or submodules. A [complete current-tree snapshot bundle](evidence/wallet-rpc-bundle-check.json), made solely in disposable scaffolding, is about **1.34 MB**, below the **8,388,608-byte** limit; the complete deliverable tree is about 4.25 MB before Git compression. This measures current source/assets/evidence, not historical Git objects the publisher may already possess.

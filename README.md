@@ -1,9 +1,46 @@
 # VETERANS — PoW NFT Mine with Wallet-Age Multipliers
 
 Proof-of-work mined ERC721C collection on **Robinhood Chain (chain id 4663)**. 3,333 Pepe miners,
-fixed 0.069 IMD mint price, ten difficulty epochs, wallet-age weighted staking, enforced 6.9%
-royalties, and a trustless ETH/IMD claim pool. This repository is the contracts stage: Foundry
-project, tests, ABI exports and this document. The frontend is a later stage.
+fixed 0.069 IMD mint price, ten difficulty epochs, wallet-age weighted staking, 6.9%
+royalty settings, and a trustless ETH/IMD claim pool. This repository includes the deployed
+contracts, frontend source in `web/`, and the production static export in `dist/`.
+
+## Website: install, preview and rebuild
+
+The site remains **https://veterans-mine-your-legacy.sites.imd.fun**. The wallet/RPC repair
+preserves the theme, contract addresses and economics. It guards connector/provider access,
+restores only the chosen wallet, retries public RPC failures, and uses the deployed validator's
+correct policy interface. The finished `dist/` is the artifact for publication to the same URL.
+Publication is handled by the hosting pipeline after submission; this worker has not changed or
+verified the public site's deployed version.
+
+With Node.js 22.12+ and npm, run from the repository root:
+
+```sh
+npm ci --prefix web
+npm --prefix web run typecheck
+npm --prefix web run build
+npm --prefix web run verify
+npm --prefix web run preview
+```
+
+Open the preview address printed by Vite. `npm --prefix web run dev` starts development mode.
+The build uses the existing lockfile and produces relative asset URLs and hash routes, including
+local fonts, favicon, share image, ABIs and deployment inventory. Keep the pinned source commit
+in the checkout: the exporter validates its attested ABIs with `git show`.
+
+Checks: `npm --prefix web test`, `npm --prefix web run test:browser`, and
+`npm --prefix web run check:chain`. Install Chromium for browser checks with
+`npm --prefix web exec playwright install chromium`. The additional read-only policy diagnostic
+is `cd web` followed by `node --import tsx scripts/check-policy.mjs`.
+
+Worker results: production build/typecheck and export integrity passed, **17 Node tests**, **34
+browser interaction groups**, and **16/16 design probe checks** passed. Both configured public
+RPCs passed all three policy simulations and gas estimates. No real transaction was sent.
+Physical wallet apps, passkeys and installed extensions remain device-testing limitations;
+WebKit could not launch because host libraries were missing. The build reports a nonfatal
+653 KB main-chunk advisory. See [actual evidence and review coverage](docs/WALLET-RPC-VALIDATION.md),
+[frontend details](web/README.md), and [implemented design](DESIGN.md).
 
 ## Contracts
 
@@ -50,13 +87,15 @@ Owner for this launch: `0x3d6a89c8751a45dd577a4c1f3b34e71c58236193`. The launch 
    is `WETH` and `deposit()` / `withdraw()` exist before calling). It lets anyone turn WETH royalties
    (marketplace offers settle in WETH) into ETH royalties through `VeteransClaimPool.unwrapWeth()`.
    Until it is set, WETH royalties wait in the pool untouched; nothing else depends on it.
-3. **Set the ERC721C security policy on the transfer validator.** The default validator
-   (`0x721C008fdff27BF06E7E123956E2Fe03B63342e3`, Limit Break's v4 `CreatorTokenTransferValidator`)
-   has code on Robinhood Chain (checked against two public RPCs on 2026-10-14). From the owner wallet
-   call on the validator: `setTransferSecurityLevelOfCollection(nft, level, …)` with the operator
-   whitelist level (recommended level / level 3), and `applyListToCollection` with a list of
-   royalty-honouring marketplaces. Staking and unstaking bypass the validator by design (ownership
-   never changes), so the staking contract does not need to be whitelisted.
+3. **Set the ERC721C security policy on the transfer validator.** The frontend resolves the
+   validator using `getTransferValidator()`. Its deployed modular interface uses
+   `setRulesetOfCollection(address,uint8,address,uint8,uint16)` and
+   `applyListToCollection(address,uint48)`; the legacy security-level method is incompatible.
+   Setup offers allowlisted operators with direct transfers either allowed or restricted, and a
+   separate operator-list transaction. The owner must inspect the intended marketplace list.
+   See [interface provenance and simulation evidence](docs/WALLET-RPC-VALIDATION.md).
+   Staking and unstaking retain their existing validator bypass because beneficial ownership
+   does not change. No transfer policy was changed by this repair.
 4. **Optionally freeze metadata.** `setRenderer` lets the owner upgrade the art until
    `freezeMetadata()` is called; freezing is irreversible.
 
@@ -195,7 +234,7 @@ to match the verifier.
 Passing tests are not an audit. The contracts hold user funds (IMD rewards, ETH royalties) and
 need an independent adversarial review before release.
 
-## Frontend notes (next stage)
+## Frontend contract integration
 
 Read everything from the ABIs in `docs/abi/`. The deployment handoff lists `VeteransRenderer` and
 `VeteransNFT`; take the staking and pool addresses from `VeteransNFT.staking()` and

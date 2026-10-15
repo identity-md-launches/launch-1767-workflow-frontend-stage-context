@@ -1,4 +1,5 @@
 import test from 'node:test';
+import './wallet-rpc.test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { concat, keccak256, numberToHex, type Abi, type Address, type EIP1193Provider } from 'viem';

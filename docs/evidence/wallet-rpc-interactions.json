@@ -1,0 +1,178 @@
+{
+  "testedAt": "2026-10-15T07:55:54.473Z",
+  "environment": "Chromium, production export at /preview/, synthetic RPC and EIP-6963 wallet; no broadcasts",
+  "results": [
+    {
+      "name": "Multiple extensions stay isolated from window.ethereum and restore only the chosen wallet",
+      "result": "PASS",
+      "durationMs": 6864
+    },
+    {
+      "name": "Repeated announcements and twelve reconnect cycles do not multiply provider listeners",
+      "result": "PASS",
+      "durationMs": 5192
+    },
+    {
+      "name": "Secondary public RPC handles setup simulation when the first endpoint fails and batches are rejected",
+      "result": "PASS",
+      "durationMs": 8173
+    },
+    {
+      "name": "Operator-only policy, valid list, invalid list and uint48 bounds use the deployed interface",
+      "result": "PASS",
+      "durationMs": 11005
+    },
+    {
+      "name": "An incompatible replacement validator fails closed instead of misreading policy words",
+      "result": "PASS",
+      "durationMs": 1247
+    },
+    {
+      "name": "Disconnected production export loads at a gateway subpath; mining is disabled",
+      "result": "PASS",
+      "durationMs": 755
+    },
+    {
+      "name": "390px first screen includes product, state, wallet and primary action",
+      "result": "PASS",
+      "durationMs": 124
+    },
+    {
+      "name": "Mobile picker offers all four wallet app links and Coinbase Smart Wallet",
+      "result": "PASS",
+      "durationMs": 1034
+    },
+    {
+      "name": "EIP-6963 named discovery hides generic injected row and handles wallet rejection",
+      "result": "PASS",
+      "durationMs": 1148
+    },
+    {
+      "name": "Unknown-chain connection switches, adds exact supplied chain, then switches again",
+      "result": "PASS",
+      "durationMs": 133
+    },
+    {
+      "name": "Wrong-chain state prevents approvals and mining until switched",
+      "result": "PASS",
+      "durationMs": 116
+    },
+    {
+      "name": "Rejected token approval is recoverable and never sends a transaction",
+      "result": "PASS",
+      "durationMs": 185
+    },
+    {
+      "name": "Exact one-mint approval is simulated and remains disabled until receipt/refetch",
+      "result": "PASS",
+      "durationMs": 4583
+    },
+    {
+      "name": "Real background PoW worker finds a wallet-bound proof; simulation blocks a stale proof",
+      "result": "PASS",
+      "durationMs": 427
+    },
+    {
+      "name": "Mint submits the actual winning nonce and refreshes allowance and supply",
+      "result": "PASS",
+      "durationMs": 4583
+    },
+    {
+      "name": "Collection ownership index, explicit staking approval and stake transaction",
+      "result": "PASS",
+      "durationMs": 9809
+    },
+    {
+      "name": "Unstake returns the selected token and preserves claimable rewards",
+      "result": "PASS",
+      "durationMs": 5274
+    },
+    {
+      "name": "Individual staking IMD, pool IMD and ETH claims route to the correct siblings",
+      "result": "PASS",
+      "durationMs": 13970
+    },
+    {
+      "name": "Gallery searches all 3333 slots and uses on-chain rarity data for filters",
+      "result": "PASS",
+      "durationMs": 465
+    },
+    {
+      "name": "All six sections reflow at 320, 390 and 1440 including full addresses",
+      "result": "PASS",
+      "durationMs": 679
+    },
+    {
+      "name": "Owner setup validates inputs and binds configure to the immutable siblings",
+      "result": "PASS",
+      "durationMs": 6355
+    },
+    {
+      "name": "Irreversible metadata freeze requires a separate acknowledgement",
+      "result": "PASS",
+      "durationMs": 4716
+    },
+    {
+      "name": "Auto-mine prepares the next proof after approval without sending it automatically",
+      "result": "PASS",
+      "durationMs": 10301
+    },
+    {
+      "name": "Pausing and changing wallet accounts terminate the mining worker and discard old proofs",
+      "result": "PASS",
+      "durationMs": 546
+    },
+    {
+      "name": "Long balances and full owner addresses reflow at both narrow widths",
+      "result": "PASS",
+      "durationMs": 1236
+    },
+    {
+      "name": "Keyboard skip link preserves the current route and native dialogs restore focus",
+      "result": "PASS",
+      "durationMs": 189
+    },
+    {
+      "name": "Uncertain receipt keeps writes locked until a successful manual confirmation check",
+      "result": "PASS",
+      "durationMs": 2535
+    },
+    {
+      "name": "Sold-out supply disables mining and never offers an unnecessary mint approval",
+      "result": "PASS",
+      "durationMs": 966
+    },
+    {
+      "name": "Unexpected mint-token decimals disable the fixed-price mint and approval controls",
+      "result": "PASS",
+      "durationMs": 1052
+    },
+    {
+      "name": "Combined pool claim and leaderboard read the deployed sibling interfaces",
+      "result": "PASS",
+      "durationMs": 5913
+    },
+    {
+      "name": "Connected wallet RPC fallback preserves reads when both public endpoints fail",
+      "result": "PASS",
+      "durationMs": 282
+    },
+    {
+      "name": "Rendered accessibility scan finds no serious or critical violations",
+      "result": "PASS",
+      "durationMs": 3304
+    },
+    {
+      "name": "Public RPC failure displays recovery and keeps actions disabled",
+      "result": "PASS",
+      "durationMs": 2972
+    },
+    {
+      "name": "ABI tampering fails closed before wallet or transaction controls load",
+      "result": "PASS",
+      "durationMs": 15302
+    }
+  ],
+  "scriptErrors": [],
+  "walletWarnings": []
+}

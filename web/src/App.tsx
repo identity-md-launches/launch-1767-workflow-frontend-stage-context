@@ -11,6 +11,7 @@ import { Claims, MyVeterans, Staking } from './Portfolio';
 import { Setup } from './Setup';
 import { useTransactions } from './transactions';
 import { errorText } from './utils';
+import { hasProviderGetter } from './wallet-provider';
 const pages = [
   ['mine', 'Mine', 'pick'],
   ['gallery', 'Gallery', 'grid'],
@@ -23,7 +24,7 @@ const currentPage = () =>
     ? location.hash.slice(1)
     : 'mine';
 export function App({ r }: { r: Runtime }) {
-  const { address, chainId, isConnected } = useConnection();
+  const { address, chainId, isConnected, status, connector } = useConnection();
   const [page, setPage] = useState(currentPage),
     [rows, setRows] = useState<TokenRow[]>(),
     [progress, setProgress] = useState(0),
@@ -61,6 +62,8 @@ export function App({ r }: { r: Runtime }) {
     retry: 1,
   });
   const ready =
+    status === 'connected' &&
+    hasProviderGetter(connector) &&
     !!address &&
     chainId === r.chain.id &&
     !!global.data &&

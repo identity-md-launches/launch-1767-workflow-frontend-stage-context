@@ -1,0 +1,140 @@
+{
+  "checkedAt": "2026-10-15T07:53:42.468Z",
+  "mode": "Production export with live read-only RPCs; no wallet connected",
+  "scriptErrors": [],
+  "consoleErrors": [],
+  "localFailures": [],
+  "layouts": [
+    {
+      "viewport": 390,
+      "document": 390,
+      "primaryAction": {
+        "y": 528.640625,
+        "height": 48,
+        "visible": true
+      },
+      "fonts": [
+        "Space Grotesk Variable",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "viewport": 1440,
+      "document": 1440,
+      "primaryAction": {
+        "y": 537.625,
+        "height": 48,
+        "visible": true
+      },
+      "fonts": [
+        "Space Grotesk Variable",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "viewport": 900,
+      "document": 900,
+      "primaryAction": {
+        "y": 568.21875,
+        "height": 48,
+        "visible": true
+      },
+      "fonts": [
+        "Space Grotesk Variable",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "viewport": 320,
+      "document": 320,
+      "primaryAction": {
+        "y": 547.9375,
+        "height": 48,
+        "visible": true
+      },
+      "fonts": [
+        "Space Grotesk Variable",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "section": "gallery",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "section": "gallery",
+      "viewport": 390,
+      "document": 390
+    },
+    {
+      "section": "gallery",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "section": "veterans",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "section": "veterans",
+      "viewport": 390,
+      "document": 390
+    },
+    {
+      "section": "veterans",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "section": "staking",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "section": "staking",
+      "viewport": 390,
+      "document": 390
+    },
+    {
+      "section": "staking",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "section": "claim",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "section": "claim",
+      "viewport": 390,
+      "document": 390
+    },
+    {
+      "section": "claim",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "section": "setup",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "section": "setup",
+      "viewport": 390,
+      "document": 390
+    },
+    {
+      "section": "setup",
+      "viewport": 1440,
+      "document": 1440
+    }
+  ],
+  "liveReads": "PASS",
+  "walletFocusReturned": true,
+  "policy": "Minting\nConfigured\nWETH royalties\nConfigured\nMetadata\nOwner can update\nTransfer policy\nRuleset 0 · list 0",
+  "webkit": "Not run: ║ Host system is missing dependencies to run browsers. ║ ║ Missing libraries:                                   ║ ║     libgtk-4.so.1                                    ║"
+}

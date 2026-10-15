@@ -2,16 +2,15 @@ import { createConfig } from 'wagmi';
 import { injected, coinbaseWallet } from 'wagmi/connectors';
 import {
   createPublicClient,
-  custom,
   defineChain,
-  fallback,
-  http,
   keccak256,
   stringToHex,
   type Abi,
   type Address,
   type EIP1193Provider,
 } from 'viem';
+import { rpcTransport } from './rpc';
+import { isWalletProvider } from './wallet-provider';
 
 export interface Deployment {
   version: number;
@@ -107,27 +106,7 @@ export async function loadRuntime() {
     testnet: deployment.network.testnet,
   });
   let walletProvider: EIP1193Provider | undefined;
-  const transport = fallback(
-    [
-      ...deployment.network.rpcUrls.map((url) =>
-        http(url, { timeout: 10000, retryCount: 0, batch: { batchSize: 40, wait: 20 } }),
-      ),
-      custom(
-        {
-          async request(args) {
-            if (!walletProvider)
-              throw new Error('Public RPCs are unavailable. Connect a wallet or retry.');
-            const id = await walletProvider.request({ method: 'eth_chainId' });
-            if (Number(id) !== chain.id)
-              throw new Error('Switch the wallet network to use wallet RPC fallback.');
-            return walletProvider.request(args as Parameters<EIP1193Provider['request']>[0]);
-          },
-        },
-        { retryCount: 0 },
-      ),
-    ],
-    { retryCount: 0 },
-  );
+  const transport = rpcTransport(deployment.network.rpcUrls, chain.id, () => walletProvider);
   const publicClient = createPublicClient({ chain, transport });
   const walletConfig = createConfig({
     chains: [chain],
@@ -143,7 +122,7 @@ export async function loadRuntime() {
     publicClient,
     walletConfig,
     setWalletProvider: (provider?: EIP1193Provider) => {
-      walletProvider = provider;
+      walletProvider = isWalletProvider(provider) ? provider : undefined;
     },
   };
 }

@@ -7,6 +7,7 @@ import {
   keccak256,
   numberToHex,
   stringToHex,
+  toFunctionSelector,
   zeroAddress,
 } from 'viem';
 export async function mockChain(manifest) {
@@ -51,6 +52,14 @@ export async function mockChain(manifest) {
     revertMint: false,
     revertNext: false,
     delay: 900,
+    policy: {
+      rulesetId: 0,
+      listId: 0,
+      customRuleset: zeroAddress,
+      globalOptions: 0,
+      rulesetOptions: 0,
+      tokenType: 721,
+    },
   };
   const addressAbi = (address) =>
     address.toLowerCase() === nft.toLowerCase()
@@ -179,15 +188,8 @@ export async function mockChain(manifest) {
     }
     if (name === 'TransferValidator') {
       if (fn === 'getCollectionSecurityPolicy')
-        return {
-          disableAuthorizationMode: true,
-          authorizersCannotSetWildcardOperators: true,
-          transferSecurityLevel: 3,
-          listId: 1n,
-          enableAccountFreezingMode: false,
-          tokenType: 721,
-        };
-      if (fn === 'lastListId') return 3n;
+        return s.policy;
+      if (fn === 'lastListId') return 3;
     }
     const method = abis[name].find((a) => a.type === 'function' && a.name === fn);
     if (method && method.outputs.length === 0) return undefined;
@@ -202,7 +204,15 @@ export async function mockChain(manifest) {
     if (method === 'eth_chainId') return numberToHex(manifest.chainId);
     if (method === 'eth_blockNumber')
       return numberToHex(1000 + Math.floor((Date.now() - started) / 500));
-    if (method === 'eth_getCode') return '0x6001600055';
+    if (method === 'eth_getCode') return params[0].toLowerCase() === live.getTransferValidator.toLowerCase() &&
+        !s.legacyValidator
+        ? '0x63' +
+            toFunctionSelector(
+              'setRulesetOfCollection(address,uint8,address,uint8,uint16)',
+            ).slice(2) +
+            '63' +
+            toFunctionSelector('applyListToCollection(address,uint48)').slice(2)
+        : '0x6001600055';
     if (method === 'eth_getBalance') return numberToHex(10n ** 18n);
     if (method === 'eth_gasPrice' || method === 'eth_maxPriorityFeePerGas')
       return numberToHex(100000000n);
@@ -235,6 +245,20 @@ export async function mockChain(manifest) {
       const definition = abis[name].find((a) => a.type === 'function' && a.name === functionName);
       if (!['view', 'pure'].includes(definition.stateMutability)) {
         s.simulations.push({ name, functionName, args });
+        if (
+          name === 'TransferValidator' &&
+          functionName === 'applyListToCollection' &&
+          args[1] > 3
+        ) {
+          throw {
+            code: 3,
+            message: 'execution reverted',
+            data: encodeErrorResult({
+              abi: abis.TransferValidator,
+              errorName: 'CreatorTokenTransferValidator__ListDoesNotExist',
+            }),
+          };
+        }
         if ((s.revertMint && functionName === 'mint') || s.revertNext) {
           s.revertNext = false;
           throw {
@@ -284,6 +308,15 @@ export async function mockChain(manifest) {
       if (fn === 'claimImd' || fn === 'claimAll') s.poolImd = 0n;
       if (fn === 'configure') s.configured = true;
       if (fn === 'freezeMetadata') s.frozen = true;
+      if (fn === 'setRulesetOfCollection')
+        s.policy = {
+          ...s.policy,
+          rulesetId: args[1],
+          customRuleset: args[2],
+          globalOptions: args[3],
+          rulesetOptions: args[4],
+        };
+      if (fn === 'applyListToCollection') s.policy.listId = args[1];
       return hash;
     }
     if (method === 'eth_getTransactionReceipt') {
@@ -334,9 +367,9 @@ export async function mockChain(manifest) {
   }
   return { state: s, rpc, abis, nft, live, user, price };
 }
-export async function injectWallet(context, { account, chainId, known = true }) {
+export async function injectWallet(context, { account, chainId, known = true, multi = false, delayAccounts = 0 }) {
   await context.addInitScript(
-    ({ account, chainId, known }) => {
+    ({ account, chainId, known, multi, delayAccounts }) => {
       const listeners = {};
       const fixture = {
         account,
@@ -357,7 +390,11 @@ export async function injectWallet(context, { account, chainId, known = true }) 
         request: async (args) => {
           fixture.requests.push(args);
           if (args.method === 'eth_chainId') return '0x' + fixture.chainId.toString(16);
-          if (args.method === 'eth_accounts') return fixture.authorized ? [fixture.account] : [];
+          if (args.method === 'eth_accounts') {
+            if (delayAccounts)
+              await new Promise((resolve) => setTimeout(resolve, delayAccounts));
+            return fixture.authorized ? [fixture.account] : [];
+          }
           if (args.method === 'eth_requestAccounts') {
             if (fixture.reject) {
               fixture.reject = false;
@@ -402,6 +439,11 @@ export async function injectWallet(context, { account, chainId, known = true }) 
       window.ethereum = provider;
       window.__walletTest = {
         fixture,
+        announce,
+        listenerCounts: () =>
+          Object.fromEntries(
+            Object.entries(listeners).map(([event, callbacks]) => [event, callbacks.length]),
+          ),
         setChain: (id) => {
           fixture.chainId = id;
           emit('chainChanged', '0x' + id.toString(16));
@@ -411,7 +453,42 @@ export async function injectWallet(context, { account, chainId, known = true }) 
           emit('accountsChanged', [value]);
         },
       };
+      if (multi) {
+        const otherListeners = {};
+        const requests = [];
+        const other = {
+          on: (event, fn) => {
+            (otherListeners[event] ??= []).push(fn);
+          },
+          removeListener: (event, fn) => {
+            otherListeners[event] = (otherListeners[event] || []).filter((f) => f !== fn);
+          },
+          request: async (args) => {
+            requests.push(args);
+            if (args.method === 'eth_accounts' || args.method === 'eth_requestAccounts')
+              return [account];
+            if (args.method === 'eth_chainId') return '0x1';
+            throw new Error('The competing wallet must not handle this request.');
+          },
+        };
+        const otherInfo = {
+          ...info,
+          uuid: '64665718-223a-4cb1-8d97-55ae21f044d0',
+          name: 'Conflict Wallet',
+          rdns: 'test.veterans.conflict',
+        };
+        const announceOther = () =>
+          window.dispatchEvent(
+            new CustomEvent('eip6963:announceProvider', {
+              detail: { info: otherInfo, provider: other },
+            }),
+          );
+        window.addEventListener('eip6963:requestProvider', announceOther);
+        announceOther();
+        window.ethereum = other;
+        window.__conflictTest = { requests };
+      }
     },
-    { account, chainId, known },
+    { account, chainId, known, multi, delayAccounts },
   );
 }

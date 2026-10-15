@@ -1,0 +1,111 @@
+{
+  "checkedAt": "2026-10-15T07:43:37.468Z",
+  "mode": "Read-only eth_call and eth_estimateGas using the on-chain owner as from; no transactions sent.",
+  "interfaceSource": "https://github.com/limitbreakinc/creator-token-transfer-validator/tree/59adb8b36ab0256c7430b017b1c9f8b4841d6e1e",
+  "endpoints": [
+    {
+      "url": "https://robinhood-rpc.publicnode.com",
+      "checks": [
+        {
+          "functionName": "setRulesetOfCollection",
+          "args": [
+            "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+            4,
+            "0x0000000000000000000000000000000000000000",
+            3,
+            6
+          ],
+          "gas": "43044",
+          "result": "PASS"
+        },
+        {
+          "functionName": "setRulesetOfCollection",
+          "args": [
+            "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+            4,
+            "0x0000000000000000000000000000000000000000",
+            3,
+            1
+          ],
+          "gas": "43044",
+          "result": "PASS"
+        },
+        {
+          "functionName": "applyListToCollection",
+          "args": [
+            "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+            0
+          ],
+          "gas": "37530",
+          "result": "PASS"
+        }
+      ],
+      "chainId": 4663,
+      "owner": "0x3d6a89C8751a45DD577a4C1F3b34E71C58236193",
+      "validator": "0x721C008fdff27BF06E7E123956E2Fe03B63342e3",
+      "codeHash": "0xcf4eb611d0a4264a3cca483100d883e21545581c69b80e9d0cc29606d4b93dcc",
+      "policy": {
+        "rulesetId": 0,
+        "listId": 0,
+        "customRuleset": "0x0000000000000000000000000000000000000000",
+        "globalOptions": 0,
+        "rulesetOptions": 0,
+        "tokenType": 721
+      },
+      "allowlistRuleset": "0x00721CE73fDE1e57A9048E0e19B7ee7c8D3F10E3",
+      "result": "PASS"
+    },
+    {
+      "url": "https://rpc.mainnet.chain.robinhood.com",
+      "checks": [
+        {
+          "functionName": "setRulesetOfCollection",
+          "args": [
+            "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+            4,
+            "0x0000000000000000000000000000000000000000",
+            3,
+            6
+          ],
+          "gas": "43044",
+          "result": "PASS"
+        },
+        {
+          "functionName": "setRulesetOfCollection",
+          "args": [
+            "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+            4,
+            "0x0000000000000000000000000000000000000000",
+            3,
+            1
+          ],
+          "gas": "43044",
+          "result": "PASS"
+        },
+        {
+          "functionName": "applyListToCollection",
+          "args": [
+            "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+            0
+          ],
+          "gas": "37530",
+          "result": "PASS"
+        }
+      ],
+      "chainId": 4663,
+      "owner": "0x3d6a89C8751a45DD577a4C1F3b34E71C58236193",
+      "validator": "0x721C008fdff27BF06E7E123956E2Fe03B63342e3",
+      "codeHash": "0xcf4eb611d0a4264a3cca483100d883e21545581c69b80e9d0cc29606d4b93dcc",
+      "policy": {
+        "rulesetId": 0,
+        "listId": 0,
+        "customRuleset": "0x0000000000000000000000000000000000000000",
+        "globalOptions": 0,
+        "rulesetOptions": 0,
+        "tokenType": 721
+      },
+      "allowlistRuleset": "0x00721CE73fDE1e57A9048E0e19B7ee7c8D3F10E3",
+      "result": "PASS"
+    }
+  ]
+}

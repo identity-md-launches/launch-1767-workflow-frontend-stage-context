@@ -10,7 +10,8 @@ const manifest = JSON.parse(
 const preview = await serve(),
   browser = await chromium.launch({ headless: true });
 const results = [],
-  errors = [];
+  errors = [],
+  walletWarnings = [];
 let context, page, chain;
 async function check(name, fn) {
   const start = Date.now();
@@ -45,6 +46,8 @@ async function fresh(options = {}) {
       account: chain.state.account,
       chainId: options.wrong ? 1 : manifest.chainId,
       known: !options.wrong,
+      multi: !!options.multi,
+      delayAccounts: options.delayAccounts || 0,
     });
   }
   await context.route('**/*', async (route) => {
@@ -55,13 +58,20 @@ async function fresh(options = {}) {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(corrupt) });
     }
     if (manifest.network.rpcUrls.some((rpc) => url.startsWith(rpc))) {
-      if (chain.state.failRpc)
+      if (chain.state.failRpc ||
+        (options.failPrimary && url.startsWith(manifest.network.rpcUrls[0]))
+      )
         return route.fulfill({
           status: 503,
           headers: { 'access-control-allow-origin': '*' },
           body: 'Unavailable during test',
         });
       const payload = JSON.parse(route.request().postData());
+      if (options.rejectBatch && Array.isArray(payload))
+        return route.fulfill({
+          status: 400,
+          body: 'Batch requests unsupported',
+        });
       const handle = async (request) => {
         try {
           return { jsonrpc: '2.0', id: request.id, result: await chain.rpc(request) };
@@ -87,6 +97,14 @@ async function fresh(options = {}) {
   page = await context.newPage();
   page.setDefaultTimeout(15000);
   page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (message) => {
+    if (
+      /MaxListenersExceeded|ObjectMultiplex|orphaned.*stream|getProvider.*not a function/i.test(
+        message.text(),
+      )
+    )
+      walletWarnings.push(message.text());
+  });
   await page.goto(preview.url);
   await page
     .getByRole('heading', { name: 'Mine your legacy.' })
@@ -118,6 +136,117 @@ async function noOverflow() {
 }
 try {
   await check(
+    'Multiple extensions stay isolated from window.ethereum and restore only the chosen wallet',
+    async () => {
+      await fresh({ wallet: true, multi: true, delayAccounts: 80 });
+      await connect();
+      await page.getByRole('button', { name: 'Approve 0.069 IMD', exact: true }).waitFor();
+      await page.reload();
+      await page.getByRole('button', { name: 'Approve 0.069 IMD', exact: true }).waitFor();
+      assert.deepEqual(await page.evaluate(() => window.__conflictTest.requests), []);
+      assert.equal(await page.getByText('The mine could not load.').count(), 0);
+      assert.equal(await page.getByRole('button', { name: /Switch to/ }).count(), 0);
+      await review('Approve 0.069 IMD', 'Approve IMD confirmed.');
+      assert.equal(chain.state.sent.length, 1);
+      assert.deepEqual(await page.evaluate(() => window.__conflictTest.requests), []);
+    },
+  );
+  await check(
+    'Repeated announcements and twelve reconnect cycles do not multiply provider listeners',
+    async () => {
+      await page.evaluate(() => {
+        for (let i = 0; i < 25; i++) window.__walletTest.announce();
+      });
+      for (let i = 0; i < 12; i++) {
+        await page.locator('.wallet-button').click();
+        await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
+        await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
+        assert.equal(
+          await page.getByRole('button', { name: 'Test Wallet', exact: true }).count(),
+          1,
+        );
+        await page.getByRole('button', { name: 'Test Wallet', exact: true }).click();
+        await page.getByRole('dialog').waitFor({ state: 'hidden' });
+        const counts = await page.evaluate(() => window.__walletTest.listenerCounts());
+        assert(
+          Object.values(counts).every((n) => n <= 1),
+          JSON.stringify(counts),
+        );
+      }
+      assert.deepEqual(await page.evaluate(() => window.__conflictTest.requests), []);
+    },
+  );
+  await check(
+    'Secondary public RPC handles setup simulation when the first endpoint fails and batches are rejected',
+    async () => {
+      await fresh({
+        wallet: true,
+        owner: true,
+        failPrimary: true,
+        rejectBatch: true,
+      });
+      await connect();
+      await page.getByRole('link', { name: 'Contracts & setup' }).click();
+      await page.getByText('Ruleset 0 · list 0', { exact: true }).waitFor();
+      await review('Review transfer rules', 'Set transfer policy confirmed.');
+      assert.equal(chain.state.sent.at(-1).functionName, 'setRulesetOfCollection');
+      assert.deepEqual(chain.state.sent.at(-1).args.slice(1), [4, '0x' + '0'.repeat(40), 3, 6]);
+      assert.equal(
+        (await page.evaluate(() => window.__walletTest.fixture.requests)).filter(
+          (r) => r.method === 'eth_call',
+        ).length,
+        0,
+      );
+      await page.getByText('Ruleset 4 · list 0', { exact: true }).waitFor();
+    },
+  );
+  await check(
+    'Operator-only policy, valid list, invalid list and uint48 bounds use the deployed interface',
+    async () => {
+      await page.getByLabel(/^Transfer rules/).selectOption('operators');
+      const sentBefore = chain.state.sent.length;
+      await review('Review transfer rules', 'Set transfer policy confirmed.');
+      assert.equal(chain.state.sent.length, sentBefore + 1);
+      assert.equal(chain.state.sent.at(-1).args[4], 1);
+      await page.getByLabel('Existing operator list ID').fill('2');
+      await review('Review operator list', 'Apply operator list confirmed.');
+      assert.equal(chain.state.sent.at(-1).tx.data.slice(0, 10), '0x9c840334');
+      await page.getByText('Ruleset 4 · list 2', { exact: true }).waitFor();
+      await page.getByLabel('Existing operator list ID').fill('4');
+      await page.getByRole('button', { name: 'Review operator list', exact: true }).click();
+      await page
+        .getByText(
+          'This operator list does not exist. Check the list ID on the validator and try again.',
+        )
+        .waitFor();
+      assert(
+        await page.getByRole('button', { name: 'Simulation failed', exact: true }).isDisabled(),
+      );
+      assert.equal(await page.getByText(/The network could not be reached/).count(), 0);
+      assert.equal(chain.state.sent.length, sentBefore + 2);
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
+      await page.getByLabel('Existing operator list ID').fill('281474976710656');
+      await page.getByRole('button', { name: 'Review operator list', exact: true }).click();
+      await page.getByText('Enter an existing list ID from 0 to 281474976710655.').waitFor();
+      assert.equal(await page.getByRole('dialog').count(), 0);
+    },
+  );
+  await check(
+    'An incompatible replacement validator fails closed instead of misreading policy words',
+    async () => {
+      await fresh({
+        wallet: true,
+        owner: true,
+        state: { legacyValidator: true },
+      });
+      await connect();
+      await page.getByRole('link', { name: 'Contracts & setup' }).click();
+      await page.getByText(/This validator uses a different policy interface/).waitFor();
+      assert(await page.getByRole('button', { name: 'Review transfer rules' }).isDisabled());
+      assert(await page.getByRole('button', { name: 'Review operator list' }).isDisabled());
+    },
+  );
+  await check(
     'Disconnected production export loads at a gateway subpath; mining is disabled',
     async () => {
       await fresh();
@@ -133,7 +262,7 @@ try {
     assert(box.y + box.height <= 844);
     assert((await page.getByRole('button', { name: 'Connect wallet' }).boundingBox()).y < 844);
     await page.screenshot({
-      path: new URL('../../docs/evidence/mine-mobile-mocked.jpg', import.meta.url).pathname,
+      path: new URL('../../docs/evidence/wallet-rpc-mine-mobile-mocked.jpg', import.meta.url).pathname,
       quality: 82,
     });
   });
@@ -554,7 +683,7 @@ try {
       );
     }
     await writeFile(
-      new URL('../../docs/evidence/accessibility.json', import.meta.url),
+      new URL('../../docs/evidence/wallet-rpc-accessibility.json', import.meta.url),
       JSON.stringify(audits, null, 2) + '\n',
     );
   });
@@ -573,6 +702,7 @@ try {
     assert.equal(await page.getByRole('button', { name: 'Connect wallet' }).count(), 0);
   });
   assert.deepEqual(errors, [], 'No browser script errors');
+  assert.deepEqual(walletWarnings, [], 'No wallet listener or orphaned-stream warnings');
 } catch (error) {
   console.error(error.message);
   if (page) {
@@ -587,7 +717,7 @@ try {
   process.exitCode = 1;
 } finally {
   await writeFile(
-    new URL('../../docs/evidence/interactions.json', import.meta.url),
+    new URL('../../docs/evidence/wallet-rpc-interactions.json', import.meta.url),
     JSON.stringify(
       {
         testedAt: new Date().toISOString(),
@@ -595,6 +725,7 @@ try {
           'Chromium, production export at /preview/, synthetic RPC and EIP-6963 wallet; no broadcasts',
         results,
         scriptErrors: errors,
+        walletWarnings,
       },
       null,
       2,

@@ -1,0 +1,94 @@
+{
+  "checkedAt": "2026-10-15T07:18:32.540Z",
+  "sourceCommit": "d3de6035fe432600d7f669ba8104e1ba4bbb37be",
+  "endpoints": [
+    {
+      "url": "https://robinhood-rpc.publicnode.com",
+      "chainId": 4663,
+      "contracts": [
+        {
+          "name": "VeteransRenderer",
+          "address": "0x52aaebf6aabe67b182eca14e3df52601b92765b7",
+          "codeBytes": 11483
+        },
+        {
+          "name": "VeteransNFT",
+          "address": "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+          "codeBytes": 12179
+        }
+      ],
+      "state": {
+        "staking": "0x5d675D359f72902E0066146846730531F594b23B",
+        "claimPool": "0x3Ad9BBDAc6058C14c44b530881ED38c32aF8e5d1",
+        "imd": "0x5F7Bb59365ce557C26dbcAa4EE9d39A4b95B7127",
+        "weth": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+        "owner": "0x3d6a89C8751a45DD577a4C1F3b34E71C58236193",
+        "renderer": "0x52aAebF6aabE67b182Eca14e3df52601B92765b7",
+        "isConfigured": true,
+        "getTransferValidator": "0x721C008fdff27BF06E7E123956E2Fe03B63342e3",
+        "metadataFrozen": false,
+        "totalMinted": "0",
+        "mintPrice": "69000000000000000",
+        "currentEpoch": "0",
+        "difficulty": "20"
+      },
+      "siblings": [
+        {
+          "name": "staking",
+          "address": "0x5d675D359f72902E0066146846730531F594b23B",
+          "codeBytes": 6189
+        },
+        {
+          "name": "claimPool",
+          "address": "0x3Ad9BBDAc6058C14c44b530881ED38c32aF8e5d1",
+          "codeBytes": 5922
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "url": "https://rpc.mainnet.chain.robinhood.com",
+      "chainId": 4663,
+      "contracts": [
+        {
+          "name": "VeteransRenderer",
+          "address": "0x52aaebf6aabe67b182eca14e3df52601b92765b7",
+          "codeBytes": 11483
+        },
+        {
+          "name": "VeteransNFT",
+          "address": "0x582ea0b5c023f354e0b95bfcb5c12a2062e8e033",
+          "codeBytes": 12179
+        }
+      ],
+      "state": {
+        "staking": "0x5d675D359f72902E0066146846730531F594b23B",
+        "claimPool": "0x3Ad9BBDAc6058C14c44b530881ED38c32aF8e5d1",
+        "imd": "0x5F7Bb59365ce557C26dbcAa4EE9d39A4b95B7127",
+        "weth": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+        "owner": "0x3d6a89C8751a45DD577a4C1F3b34E71C58236193",
+        "renderer": "0x52aAebF6aabE67b182Eca14e3df52601B92765b7",
+        "isConfigured": true,
+        "getTransferValidator": "0x721C008fdff27BF06E7E123956E2Fe03B63342e3",
+        "metadataFrozen": false,
+        "totalMinted": "0",
+        "mintPrice": "69000000000000000",
+        "currentEpoch": "0",
+        "difficulty": "20"
+      },
+      "siblings": [
+        {
+          "name": "staking",
+          "address": "0x5d675D359f72902E0066146846730531F594b23B",
+          "codeBytes": 6189
+        },
+        {
+          "name": "claimPool",
+          "address": "0x3Ad9BBDAc6058C14c44b530881ED38c32aF8e5d1",
+          "codeBytes": 5922
+        }
+      ],
+      "result": "PASS"
+    }
+  ]
+}

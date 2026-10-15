@@ -5,12 +5,12 @@ import {
   custom,
   formatEther,
   type Address,
-  type EIP1193Provider,
   type Hash,
 } from 'viem';
 import type { Runtime } from './config';
 import { AddressLink, Modal, Notice } from './components';
 import { amount, errorText } from './utils';
+import { getConnectorProvider } from './wallet-provider';
 export interface Action {
   key: string;
   label: string;
@@ -45,7 +45,7 @@ export function useTransactions(r: Runtime, ready: boolean, refresh: () => Promi
   const outstanding = useRef<
     { action: Action; account: Address; hash: Hash; replaced: boolean } | undefined
   >(undefined);
-  const context = `${connection.address}:${connection.chainId}`;
+  const context = `${connection.address}:${connection.chainId}:${connection.connector?.uid}:${connection.status}`;
   const intentContext = useRef('');
   const request = (a: Action, account: Address) => ({
     address: a.address,
@@ -156,6 +156,7 @@ export function useTransactions(r: Runtime, ready: boolean, refresh: () => Promi
       original = live.current;
     if (
       !original.address ||
+      original.status !== 'connected' ||
       !original.connector ||
       original.chainId !== r.chain.id ||
       intentContext.current !== context
@@ -166,12 +167,17 @@ export function useTransactions(r: Runtime, ready: boolean, refresh: () => Promi
     const update = (value: TxState) => setStates((s) => ({ ...s, [action.key]: value }));
     update({ phase: 'simulating', message: 'Checking the current contract state…' });
     try {
-      const provider = (await original.connector.getProvider()) as EIP1193Provider;
+      const provider = await getConnectorProvider(original.connector);
       if (Number(await provider.request({ method: 'eth_chainId' })) !== r.chain.id)
         throw new Error('Switch to the configured network before signing.');
       const args = request(action, original.address);
       const { request: simulated } = await r.publicClient.simulateContract(args);
-      if (live.current.address !== original.address || live.current.chainId !== original.chainId)
+      if (
+        live.current.address !== original.address ||
+        live.current.chainId !== original.chainId ||
+        live.current.connector !== original.connector ||
+        live.current.status !== 'connected'
+      )
         throw new Error('Wallet changed. Review the action again.');
       update({ phase: 'signature', message: 'Confirm this action in your wallet.' });
       const wallet = createWalletClient({

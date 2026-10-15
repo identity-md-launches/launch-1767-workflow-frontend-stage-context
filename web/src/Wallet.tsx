@@ -1,17 +1,27 @@
-import { useEffect, useState } from 'react';
-import { useConnect, useConnectors, useConnection, useDisconnect, type Connector } from 'wagmi';
+import { useEffect, useRef, useState } from 'react';
+import {
+  useConnect,
+  useConnectors,
+  useConnection,
+  useDisconnect,
+  useReconnect,
+  type Connector,
+} from 'wagmi';
 import { numberToHex, type EIP1193Provider } from 'viem';
 import type { Runtime } from './config';
 import { AddressLink, Icon, Modal } from './components';
 import { errorText, shortAddress } from './utils';
 import { OPEN_IN, isMobileBrowser } from './open-in';
+import { getConnectorProvider, hasProviderGetter, isWalletProvider } from './wallet-provider';
 
 export async function switchNetwork(provider: EIP1193Provider, r: Pick<Runtime, 'deployment'>) {
+  if (!isWalletProvider(provider))
+    throw new Error('Wallet provider is unavailable. Reconnect your wallet.');
   const chainId = numberToHex(r.deployment.chainId);
   try {
     await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
   } catch (error) {
-    const e = error as {
+    const e = (error ?? {}) as {
       code?: number;
       message?: string;
       data?: { originalError?: { code?: number } };
@@ -32,10 +42,14 @@ export async function switchNetwork(provider: EIP1193Provider, r: Pick<Runtime, 
   }
 }
 export function Wallet({ r }: { r: Runtime }) {
-  const { address, chainId, connector, isConnected } = useConnection();
-  const connectors = useConnectors();
+  const { address, chainId, connector, status } = useConnection();
+  const discovered = useConnectors();
+  const connectors = discovered.filter(hasProviderGetter);
   const { mutateAsync: connect, isPending, variables } = useConnect();
   const { mutate: disconnect } = useDisconnect();
+  const { mutateAsync: reconnect } = useReconnect();
+  const restoring = useRef(false);
+  const choosing = useRef(false);
   const [open, setOpen] = useState(false),
     [message, setMessage] = useState(''),
     [switching, setSwitching] = useState(false);
@@ -47,23 +61,57 @@ export function Wallet({ r }: { r: Runtime }) {
     ...connectors.filter((c) => c.type !== 'injected'),
   ].filter((c) => !(c.id === 'injected' && named) && (!mobile || c.type !== 'injected'));
   useEffect(() => {
+    let active = true;
+    // Restore only the wallet the visitor chose. Probing every installed wallet
+    // also initializes unused SDKs and connects multiple authorized extensions.
+    void (async () => {
+      const recent = await r.walletConfig.storage?.getItem('recentConnectorId');
+      const previous = discovered.find(
+        (c) =>
+          c.id === recent &&
+          hasProviderGetter(c) &&
+          !(
+            c.id === 'injected' &&
+            discovered.some((other) => other.type === 'injected' && other.id !== 'injected')
+          ),
+      );
+      if (
+        !active ||
+        restoring.current ||
+        !previous ||
+        r.walletConfig.state.status !== 'disconnected'
+      )
+        return;
+      restoring.current = true;
+      await reconnect({ connectors: [previous] });
+    })().catch(() => {
+      // A missing/locked extension leaves the normal wallet picker available.
+    });
+    return () => {
+      active = false;
+    };
+  }, [discovered, r, reconnect]);
+  useEffect(() => {
     let current = true;
-    if (connector)
-      connector.getProvider().then((p) => {
-        if (current) r.setWalletProvider(p as EIP1193Provider);
-      });
-    else r.setWalletProvider(undefined);
+    r.setWalletProvider(undefined);
+    if (status === 'connected' && chainId === r.chain.id && hasProviderGetter(connector))
+      void getConnectorProvider(connector)
+        .then((provider) => {
+          if (current) r.setWalletProvider(provider);
+        })
+        .catch((error) => {
+          if (current) setMessage(errorText(error));
+        });
     return () => {
       current = false;
       r.setWalletProvider(undefined);
     };
-  }, [connector, r]);
+  }, [connector, status, chainId, r]);
   async function switchChain(c = connector) {
-    if (!c) return;
     setSwitching(true);
     setMessage('');
     try {
-      await switchNetwork((await c.getProvider()) as EIP1193Provider, r);
+      await switchNetwork(await getConnectorProvider(c), r);
       setOpen(false);
     } catch (e) {
       setMessage(errorText(e));
@@ -72,16 +120,25 @@ export function Wallet({ r }: { r: Runtime }) {
     }
   }
   async function choose(c: Connector) {
+    if (choosing.current) return;
+    choosing.current = true;
+    restoring.current = true;
     setMessage('');
     try {
+      // Never pass a serialized connector or factory into the connection action.
+      if (!hasProviderGetter(c))
+        throw new Error('This wallet is unavailable. Reload and choose a wallet again.');
       const result = await connect({ connector: c });
       if (result.chainId !== r.chain.id) await switchChain(c);
       else setOpen(false);
     } catch (e) {
       setMessage(errorText(e));
+    } finally {
+      choosing.current = false;
     }
   }
-  const wrong = isConnected && chainId !== r.chain.id;
+  const wrong = status === 'connected' && chainId !== r.chain.id;
+  const reconnecting = status === 'reconnecting';
   return (
     <>
       <button
@@ -90,16 +147,18 @@ export function Wallet({ r }: { r: Runtime }) {
           if (wrong) void switchChain();
           else setOpen(true);
         }}
-        disabled={switching}
+        disabled={switching || isPending || reconnecting}
       >
         <Icon name="wallet" />
-        {switching
-          ? 'Switching…'
-          : wrong
-            ? `Switch to ${r.chain.name}`
-            : address
-              ? shortAddress(address)
-              : 'Connect wallet'}
+        {reconnecting
+          ? 'Reconnecting…'
+          : switching
+            ? 'Switching…'
+            : wrong
+              ? `Switch to ${r.chain.name}`
+              : address
+                ? shortAddress(address)
+                : 'Connect wallet'}
       </button>
       {message && !open && (
         <div className="wallet-note" role="status">
@@ -115,10 +174,20 @@ export function Wallet({ r }: { r: Runtime }) {
             <>
               <AddressLink address={address} r={r} />
               <p>{r.chain.name}</p>
+              {wrong && (
+                <button
+                  className="button full"
+                  disabled={switching}
+                  onClick={() => void switchChain()}
+                >
+                  Switch to {r.chain.name}
+                </button>
+              )}
               <button
                 className="button full"
                 onClick={() => {
                   disconnect();
+                  r.setWalletProvider(undefined);
                   setOpen(false);
                 }}
               >

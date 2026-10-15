@@ -39,7 +39,7 @@ loadRuntime()
     });
     root.render(
       <ErrorBoundary>
-        <WagmiProvider config={runtime.walletConfig}>
+        <WagmiProvider config={runtime.walletConfig} reconnectOnMount={false}>
           <QueryClientProvider client={query}>
             <App r={runtime} />
           </QueryClientProvider>

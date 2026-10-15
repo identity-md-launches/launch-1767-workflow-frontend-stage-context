@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-15T08:00:51.488620+00:00",
+  "result": "PASS",
+  "kind": "Complete current source/export snapshot in a disposable Git repository; no historical commits or checkout mutation",
+  "files": 399,
+  "workingTreeBytes": 4247805,
+  "completeSnapshotBundleBytes": 1338288,
+  "budgetBytes": 8388608,
+  "includes": "All deliverable files, including unchanged source, dependencies, lockfile, production export and evidence; excludes task inputs and test/scratch",
+  "publicationBundle": "The controller constructs the actual submission bundle; historical objects are not included in this measurement."
+}

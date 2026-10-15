@@ -11,11 +11,11 @@ This frontend targets the already deployed application at source commit `d3de603
 
 The canonical hash recursively sorts object keys, preserves array order, encodes compact JSON as UTF-8, then computes Keccak-256 without an `0x` prefix. The exporter obtains each raw ABI array from `git show <sourceCommit>:docs/abi/<Contract>.json`; the two attested hashes were verified before implementation and during every build. Staking, pool, and unwrapper ABIs come from the same source commit. They appear as hashed assets, without adding unattested contracts to the manifest's contract set.
 
-At the recorded read-only check, `VeteransNFT.staking()` returned `0x5d675D359f72902E0066146846730531F594b23B` and `claimPool()` returned `0x3Ad9BBDAc6058C14c44b530881ED38c32aF8e5d1`. These are documentation snapshots, not browser configuration. The browser resolves and verifies the siblings from the NFT on every new session. Both configured RPCs returned chain 4663 and nonempty code for the attested contracts and siblings. Exact observations and check time are in [chain-check.json](evidence/chain-check.json).
+At the recorded read-only check, `VeteransNFT.staking()` returned `0x5d675D359f72902E0066146846730531F594b23B` and `claimPool()` returned `0x3Ad9BBDAc6058C14c44b530881ED38c32aF8e5d1`. These are documentation snapshots, not browser configuration. The browser resolves and verifies the siblings from the NFT on every new session. Both configured RPCs returned chain 4663 and nonempty code for the attested contracts and siblings. Current observations and check time are in [wallet-rpc-chain-check.json](evidence/wallet-rpc-chain-check.json); the earlier chain-check file is retained as historical evidence.
 
 ## Deployed behavior reflected in the UI
 
-- The live deployment was **not configured for IMD or WETH** at validation time, with zero NFTs minted. The frontend exposes owner setup and disables unavailable actions. No deployment configuration was changed by this worker.
+- On 2026-10-15 both public RPCs reported **IMD and WETH configured**, with zero NFTs minted. These values are live reads, not new configuration. The frontend still exposes owner setup and disables unavailable actions. No deployment configuration was changed by this worker.
 - Minting charges the deployed constant `0.069 × 10^18` units. Owner setup checks IMD's symbol and 18 decimals; mining also refuses unexpected mint-token metadata. Approval authorizes the NFT to spend exactly one mint price, not an unlimited allowance.
 - The proof preimage is exactly packed `(uint256 chainId, address nft, address wallet, uint256 nonce)`, hashed by Keccak-256 and compared strictly below the latest target. A Web Worker runs bounded batches. Proofs do not reserve a mint or survive a stricter target automatically.
 - The deployed epoch is zero-based and displayed as 1–10. Epochs 1–9 have 333 mints; epoch 10 has 336. This preserves both the deployed supply cap of 3,333 and ten epochs.
@@ -33,13 +33,15 @@ At the recorded read-only check, `VeteransNFT.staking()` returned `0x5d675D359f7
 | My Veterans | NFT `setApprovalForAll(staking, true/false)`, staking `stake`, `unstake`, `refresh`, NFT `safeTransferFrom` |
 | Claim | staking `claim`; pool `claimImd`, `claimEth`, `claimAll`, `syncImd`, `unwrapWeth`, `payTreasury`, `donate` |
 | Owner setup | NFT `configure`, `setWeth`, `setRenderer`, `freezeMetadata`, `setTransferValidator`, `setAutomaticApprovalOfTransfersFromValidator`, `transferOwnership`, `renounceOwnership` |
-| Validator setup | current validator `setTransferSecurityLevelOfCollection`, `applyListToCollection` |
+| Validator setup | current modular validator `setRulesetOfCollection`, `applyListToCollection(address,uint48)` |
 
 Protocol callbacks (`notifyReward`, `notifyImd`, `recordFirstSeen`, `onWeightChange`, `onERC721Received`) are called by contracts, not exposed as visitor transactions. Renderer methods are reads. The handoff is `evm_contracts`, without a launch token pool, so no swaps or liquidity controls are appropriate.
 
 ## Source layout
 
-- `web/src/config.ts`: manifest loading, integrity verification, chain, RPC fallback, wallet connectors.
+- `web/src/config.ts`: manifest loading, integrity verification, chain and wallet connectors.
+- `web/src/rpc.ts`, `wallet-provider.ts`: bounded RPC fallback and runtime provider guards.
+- `web/src/validator.ts`, `web/config/transfer-validator.json`: deployed modular validator interface and policy encoding.
 - `web/src/chain.ts`: live reads, deployment/sibling checks, bounded collection scan, metadata decoding.
 - `web/src/transactions.tsx`: review/simulation/signature/receipt states, transaction locks, replacement handling.
 - `web/src/pow.ts` and `miner.worker.ts`: exact hash computation and cancellable mining.
@@ -50,7 +52,7 @@ Protocol callbacks (`notifyReward`, `notifyImd`, `recordFirstSeen`, `onWeightCha
 
 ## External interfaces and attribution
 
-The ERC20 interface is viem's standard `erc20Abi`. The extra validator ABI is a small read/write interface derived from Limit Break's public [CreatorTokenTransferValidator implementation](https://github.com/limitbreakinc/creator-token-standards/blob/main/src/utils/CreatorTokenTransferValidator.sol) and [TransferPolicy struct](https://github.com/limitbreakinc/creator-token-standards/blob/main/src/utils/TransferPolicy.sol), consulted on 2026-10-14. It is not represented as an attested application ABI. The live validator address comes only from `getTransferValidator()`. Policy writes require a successful compatible policy read and transaction simulation. This interface source is subject to upstream changes; the exported ABI bytes are fixed in this submission.
+The ERC20 interface is viem's standard `erc20Abi`. The validator interface in `web/config/transfer-validator.json` matches the deployed modular [CreatorTokenTransferValidator](https://github.com/limitbreakinc/creator-token-transfer-validator/tree/59adb8b36ab0256c7430b017b1c9f8b4841d6e1e), rather than the legacy interface in creator-token-standards. It is not an attested application ABI. The live validator address comes only from `getTransferValidator()`. Policy writes require supported runtime selectors, a compatible policy read and transaction simulation. [Current validation](WALLET-RPC-VALIDATION.md) records the exact methods, option mapping, runtime hash and successful read-only simulations on both public RPCs. The exported interface bytes are fixed in this submission; application ABI hashes remain unchanged.
 
 Wallet integration follows the assignment's pinned reference and the official [wagmi configuration documentation](https://wagmi.sh/react/api/createConfig) and [Coinbase connector documentation](https://wagmi.sh/react/api/connectors/coinbaseWallet). Transaction preflight follows [viem simulation](https://viem.sh/docs/contract/simulateContract). The Rabby link uses `_cmd=open-dapp&dapp=...`, verified against [Rabby Mobile's universal-link handler](https://github.com/RabbyHub/rabby-mobile/blob/develop/apps/mobile/src/hooks/universalLink.ts) and `/mobile/` production prefix on 2026-10-14.
 
@@ -58,6 +60,13 @@ Wallet marks were extracted from RainbowKit 2.2.11, with its MIT license include
 
 ## Scope and publication
 
-The explicit write budget allows only `web/**`, `dist/**`, `docs/**`, and `web/.gitignore`. Therefore the requested design specification is delivered at **`docs/DESIGN.md`**, not the prohibited root `DESIGN.md`. Root build files, contract source, dependencies under `lib/`, and workflow configuration remain untouched.
+This repair changes only frontend source, tests, documentation and the static export. Contract
+source, economics, existing build configuration, dependency manifests/lockfiles, ignore files,
+vendored dependencies and workflows are unchanged. The final design specification is at
+[DESIGN.md](../DESIGN.md).
 
-No public site URL or CID was supplied or created. Open Graph assets use relative paths; a publisher can add absolute URLs once the hosting name exists, then regenerate the entire manifest. Worker tests do not certify future gateway publication, RPC availability, marketplace enforcement, actual hardware performance, or wallet signatures. Publication's immutable/named-copy, RPC-code, and hash checks remain the control plane's responsibility.
+The existing site name is `https://veterans-mine-your-legacy.sites.imd.fun`. The hosting pipeline
+publishes the submitted `dist/` at that name; no separate publishing command was run. Relative
+assets and hash navigation are retained for static hosting. Worker checks validate the local
+export; they do not establish that the public URL has switched to this revision, future RPC
+availability, marketplace compliance, native-wallet behavior or real signatures.

@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
-import { erc20Abi, parseAbi } from 'viem';
+import { erc20Abi } from 'viem';
 import { abiHash, sha256, json, files } from './shared.mjs';
 const handoff = await json(new URL('../config/deployment-handoff.json', import.meta.url));
 const network = await json(new URL('../config/network-handoff.json', import.meta.url));
@@ -26,13 +26,9 @@ for (const name of [
   await writeFile(new URL(`abi/${name}.json`, dist), JSON.stringify(abi));
 }
 await writeFile(new URL('abi/ERC20.json', dist), JSON.stringify(erc20Abi));
-// Limit Break CreatorTokenTransferValidator interface; source provenance in docs/FRONTEND.md.
-const validatorAbi = parseAbi([
-  'function getCollectionSecurityPolicy(address collection) view returns ((bool disableAuthorizationMode,bool authorizersCannotSetWildcardOperators,uint8 transferSecurityLevel,uint120 listId,bool enableAccountFreezingMode,uint16 tokenType))',
-  'function setTransferSecurityLevelOfCollection(address collection,uint8 level,bool disableAuthorizationMode,bool disableWildcardOperators,bool enableAccountFreezingMode)',
-  'function applyListToCollection(address collection,uint120 id)',
-  'function lastListId() view returns (uint120)',
-]);
+// Interface of the deployed modular validator, not the older ERC721C validator.
+// ABI/source provenance and read-only chain validation: docs/WALLET-RPC-VALIDATION.md.
+const validatorAbi = await json(new URL('../config/transfer-validator.json', import.meta.url));
 await writeFile(new URL('abi/TransferValidator.json', dist), JSON.stringify(validatorAbi));
 const contracts = handoff.contracts.map(({ name, address, abiHash }) => ({
   name,
